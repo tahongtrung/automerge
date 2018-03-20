@@ -1,5 +1,7 @@
 const { Map, List, Set } = require('immutable')
+
 const { SkipList } = require('./skip_list')
+
 const ROOT_ID = '00000000-0000-0000-0000-000000000000'
 
 // Returns true if the two operations are concurrent, that is, they happened without being aware of

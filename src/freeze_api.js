@@ -1,10 +1,8 @@
 const { Map, List, Set } = require('immutable')
+
+const { isObject } = require('./predicates')
 const OpSet = require('./op_set')
 const { Text } = require('./text')
-
-function isObject(obj) {
-  return typeof obj === 'object' && obj !== null
-}
 
 function updateMapObject(opSet, edit) {
   if (edit.action === 'create') {
@@ -174,7 +172,7 @@ function updateCache(opSet, diffs) {
   return opSet
 }
 
-function instantiateImmutable(opSet, objectId) {
+function instantiateFrozen(opSet, objectId) {
   const isRoot = (objectId === OpSet.ROOT_ID)
   const objType = opSet.getIn(['byObject', objectId, '_init', 'action'])
 
@@ -212,7 +210,7 @@ function instantiateImmutable(opSet, objectId) {
 
 function materialize(opSet) {
   opSet = opSet.set('cache', Map())
-  const context = {instantiateObject: instantiateImmutable, cache: {}}
+  const context = {instantiateObject: instantiateFrozen, cache: {}}
   const snapshot = context.instantiateObject(opSet, OpSet.ROOT_ID)
   return [opSet.set('cache', Map(context.cache)), snapshot]
 }

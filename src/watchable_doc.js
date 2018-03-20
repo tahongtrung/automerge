@@ -1,4 +1,5 @@
 const { Map, Set, fromJS } = require('immutable')
+
 const AutoAPI = require('./auto_api')
 
 class WatchableDoc {

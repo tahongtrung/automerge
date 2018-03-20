@@ -1,13 +1,16 @@
 const { Map, List, fromJS } = require('immutable')
+const transit = require('transit-immutable-js')
 const uuid = require('uuid/v4')
+
+const { isObject } = require('./predicates')
 const OpSet = require('./op_set')
 const { setField, splice, setListIndex, deleteField } = require('./state')
-const { isObject, isImmutable, checkTarget, makeChange, merge, applyChanges} = require('./auto_api')
-const { rootObjectProxy, rootImmutableProxy, isImmutableProxy, ImmutableContext } = require('./proxies')
+const { checkTarget, makeChange, merge, applyChanges} = require('./auto_api')
+const { rootObjectProxy } = require('./proxies')
 const FreezeAPI = require('./freeze_api')
 const ImmutableAPI = require('./immutable_api')
 const { Text } = require('./text')
-const transit = require('transit-immutable-js')
+
 
 ///// Automerge.* API
 
@@ -20,24 +23,17 @@ function initImmutable(actorId) {
 }
 
 function change(doc, message, callback) {
-  // TODO: figure out what to do about change target checking, re-enable for at least mutable
-  // checkTarget('change', doc)
-  // if (doc._objectId !== '00000000-0000-0000-0000-000000000000') {
-  //   throw new TypeError('The first argument to Automerge.change must be the document root')
-  // }
-  if (doc._change && doc._change.mutable) {
-    throw new TypeError('Calls to Automerge.change cannot be nested')
-  }
   if (typeof message === 'function' && callback === undefined) {
     [message, callback] = [callback, message]
   }
 
-  if (isImmutable(doc)) {
-    const context = ImmutableContext({
+  if (ImmutableAPI.isReadObject(doc)) {
+    // TODO: We could do more checks here, especially since it's close to the mutable path.
+    const context = ImmutableAPI.ImmutableContext({
       state: doc._state,
     })
-    const result = callback(rootImmutableProxy(context))
-    if (!isImmutableProxy(result)) {
+    const result = callback(ImmutableAPI.rootWriteMap(context))
+    if (!ImmutableAPI.isWriteObject(result)) {
       throw new TypeError('you must return a document from the change block')
     }
     if (result._objectId !== '00000000-0000-0000-0000-000000000000') {
@@ -45,6 +41,13 @@ function change(doc, message, callback) {
     }
     return makeChange(doc, result._context.state, message)
   } else {
+    checkTarget('change', doc)
+    if (doc._objectId !== '00000000-0000-0000-0000-000000000000') {
+      throw new TypeError('The first argument to Automerge.change must be the document root')
+    }
+    if (doc._change && doc._change.mutable) {
+      throw new TypeError('Calls to Automerge.change cannot be nested')
+    }
     const context = {state: doc._state, mutable: true, setField, splice, setListIndex, deleteField}
     callback(rootObjectProxy(context))
     return makeChange(doc, context.state, message)

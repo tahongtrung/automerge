@@ -1,7 +1,8 @@
 const { List, Map, fromJS, is } = require('immutable')
 const uuid = require('uuid/v4')
+
+const { isObject, isImmutableJS } = require('./predicates')
 const OpSet = require('./op_set')
-const { isObject, isImmutable } = require('./auto_api')
 const { Text } = require('./text')
 
 function parseListIndex(key) {
@@ -33,7 +34,7 @@ function createNestedObjects(state, value) {
   if (typeof value._objectId === 'string') return [state, value._objectId]
   const objectId = uuid()
 
-  if (isImmutable(value)) {
+  if (isImmutableJS(value)) {
     if (List.isList(value)) {
       state = makeOp(state, { action: 'makeList', obj: objectId })
       let elemId = '_head'
